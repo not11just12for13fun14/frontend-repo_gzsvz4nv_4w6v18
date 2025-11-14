@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useRef, useState, useEffect } from 'react'
 
 function Petals() {
   const petals = useMemo(() => Array.from({ length: 18 }).map((_, i) => ({
@@ -25,6 +25,66 @@ function Petals() {
           }}
         >🌹</span>
       ))}
+    </div>
+  )
+}
+
+function MusicControl() {
+  const audioRef = useRef(null)
+  const [playing, setPlaying] = useState(false)
+
+  // Try to resume playback if user previously pressed play and navigated/refresh
+  useEffect(() => {
+    const wasPlaying = sessionStorage.getItem('hb_playing') === '1'
+    if (wasPlaying) {
+      // Only attempt after a tiny delay to ensure audio element is ready
+      const t = setTimeout(() => {
+        audioRef.current?.play().then(() => setPlaying(true)).catch(() => {})
+      }, 150)
+      return () => clearTimeout(t)
+    }
+  }, [])
+
+  const toggle = async () => {
+    const el = audioRef.current
+    if (!el) return
+    try {
+      if (playing) {
+        el.pause()
+        setPlaying(false)
+        sessionStorage.setItem('hb_playing', '0')
+      } else {
+        await el.play()
+        setPlaying(true)
+        sessionStorage.setItem('hb_playing', '1')
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  return (
+    <div className="mt-6 flex flex-col items-center">
+      <audio ref={audioRef} loop preload="auto">
+        {/* MP3 (widely supported) */}
+        <source src="https://cdn.pixabay.com/download/audio/2023/03/07/audio_385d09a6ff.mp3?filename=happy-birthday-to-you-14321.mp3" type="audio/mpeg" />
+        {/* OGG fallback */}
+        <source src="https://upload.wikimedia.org/wikipedia/commons/1/19/Happy_Birthday_to_You_Instrumental.ogg" type="audio/ogg" />
+        Your browser does not support the audio element.
+      </audio>
+
+      <button
+        onClick={toggle}
+        className={`group inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors shadow-sm backdrop-blur ${
+          playing
+            ? 'bg-rose-600 text-white border-rose-600 hover:bg-rose-500'
+            : 'bg-white/70 text-rose-700 border-rose-300 hover:bg-white'
+        }`}
+      >
+        <span role="img" aria-label="music">{playing ? '🎶' : '🎵'}</span>
+        {playing ? 'Jeda lagu' : 'Putar lagu selamat ulang tahun'}
+      </button>
+      <p className="mt-2 text-xs text-rose-500">Tekan tombol untuk memutar musik</p>
     </div>
   )
 }
@@ -81,6 +141,9 @@ export default function App() {
                   <span className="text-sm font-medium">Dengan cinta yang tulus</span>
                 </div>
                 <div className="text-2xl">💐 💞 💐</div>
+
+                {/* Music control */}
+                <MusicControl />
               </div>
             </div>
           </div>
